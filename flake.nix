@@ -16,7 +16,10 @@
           pkgs = import nixpkgs { inherit system; };
           aeneasTools = aeneas.packages.${system};
           # Reuse the same Rust toolchain used to build the pinned Charon.
-          rustToolchain = aeneas.inputs.charon.packages.${system}.rustToolchain;
+          # Same toolchain plus rust-analyzer, so editor diagnostics match it.
+          rustToolchain = aeneas.inputs.charon.packages.${system}.rustToolchain.override (old: {
+            extensions = (old.extensions or [ ]) ++ [ "rust-analyzer" ];
+          });
         in {
           default = pkgs.mkShell {
             packages = [

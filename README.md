@@ -34,8 +34,8 @@ Format decisions (implemented in `src/lib.rs`):
 
 | Milestone | Status |
 | --- | --- |
-| M0 Foundation | Cargo project done; `flake.lock` and `proofs/` setup pending (needs Nix) |
-| M1 Minimal validator | implemented and tested |
+| M0 Foundation | Cargo project and `flake.lock` done; `proofs/` setup pending |
+| M1 Minimal validator | implemented and tested (pinned nightly-2026-09-17) |
 | M2 Translation | not yet modeled |
 | M3 First proofs | not yet modeled |
 
