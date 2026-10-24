@@ -28,6 +28,8 @@
               rustToolchain
               pkgs.elan
               pkgs.git
+              pkgs.just
+              pkgs.pre-commit
               pkgs.gnumake
               pkgs.pkg-config
             ];
@@ -39,6 +41,10 @@
               echo "Aeneas source: $AENEAS_SOURCE"
               echo "Aeneas rev:    $AENEAS_REV"
               echo "Lean version is pinned in proofs/lean-toolchain (once created)."
+              # Install the Git hooks from .pre-commit-config.yaml (idempotent).
+              if [ -f .pre-commit-config.yaml ] && [ -d .git ]; then
+                pre-commit install --hook-type pre-commit >/dev/null
+              fi
             '';
           };
         });

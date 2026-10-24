@@ -1,0 +1,45 @@
+# Git hooks run by pre-commit (https://pre-commit.com); the Nix dev shell
+# installs them. Hooks are local and use the dev shell's pinned tools, so
+# commit from inside `nix develop` (or a direnv-activated shell).
+# Run every hook on the whole tree: `just hooks`.
+#
+# A toolchain change (flake.nix / flake.lock) re-runs everything.
+repos:
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt --check
+        entry: cargo fmt --all -- --check
+        language: system
+        files: (\.rs$|^flake\.(nix|lock)$)
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: cargo clippy -D warnings
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        files: (\.rs$|^Cargo\.(toml|lock)$|^flake\.(nix|lock)$)
+        pass_filenames: false
+
+      - id: cargo-test
+        name: cargo test
+        entry: cargo test --all-features
+        language: system
+        files: (\.rs$|^Cargo\.(toml|lock)$|^flake\.(nix|lock)$)
+        pass_filenames: false
+
+      # Regenerates proofs/VeriPacket/Code from the Rust source and fails if
+      # it differs from what is staged; stage the regenerated files to fix.
+      - id: lean-model-fresh
+        name: generated Lean model is up to date
+        entry: just check-generated
+        language: system
+        files: ^(src/|Cargo\.(toml|lock)$|flake\.(nix|lock)$|proofs/VeriPacket/Code/)
+        pass_filenames: false
+
+      - id: lean-proofs
+        name: lake build (check proofs)
+        entry: just proofs
+        language: system
+        files: ^(src/|Cargo\.(toml|lock)$|flake\.(nix|lock)$|proofs/(?!\.lake/))
+        pass_filenames: false

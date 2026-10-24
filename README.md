@@ -67,3 +67,8 @@ aeneas -backend lean veripacket.llbc -dest proofs -subdir /VeriPacket/Code \
 
 Common tasks are wrapped in the `justfile`; run `just` to list them
 (`just check`, `just translate`, `just proofs`, `just verify`).
+
+The dev shell installs Git pre-commit hooks (`.pre-commit-config.yaml`):
+Rust fmt/clippy/tests, a stale-generated-model check, and `lake build`,
+each run only when relevant files are staged. Commit from inside the dev
+shell; run all hooks manually with `just hooks`.

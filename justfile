@@ -68,6 +68,10 @@ check-generated: translate
 # End to end: Rust checks, regenerate the model, check proofs
 verify: check translate proofs
 
+# Run every pre-commit hook against the whole tree
+hooks:
+    pre-commit run --all-files
+
 # Remove Cargo build output and LLBC (keeps generated Lean)
 clean:
     cargo clean
