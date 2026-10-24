@@ -45,6 +45,7 @@ Aeneas translation.
 | M2 Translation | model generated: `proofs/VeriPacket/Code` builds with Lake; no external models needed |
 | M3 First proofs | proof checked: `proofs/VeriPacket/Properties/ValidPacket.lean` (`just audit` lists axioms) |
 | M4 Parsed structure | proof checked: `proofs/VeriPacket/Properties/ParsePacket.lean` |
+| M5 Automation | pre-commit hooks and GitHub Actions CI |
 
 ## Development
 
@@ -72,3 +73,7 @@ The dev shell installs Git pre-commit hooks (`.pre-commit-config.yaml`):
 Rust fmt/clippy/tests, a stale-generated-model check, and `lake build`,
 each run only when relevant files are staged. Commit from inside the dev
 shell; run all hooks manually with `just hooks`.
+
+CI (`.github/workflows/verify.yml`) runs the same checks on every push to
+`main` and every pull request, plus `just audit`, which fails on any axiom
+beyond `propext`, `Classical.choice`, `Quot.sound` or any `sorry`/`admit`.

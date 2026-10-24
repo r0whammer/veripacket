@@ -55,9 +55,19 @@ translate: extract
 proofs: _proofs-ready
     cd proofs && lake build
 
-# Print the axioms each headline theorem depends on
+# Print the axioms each headline theorem depends on; fail on any beyond
+# Lean's standard three, or on sorry/admit in human-authored Lean
 audit: proofs
-    cd proofs && lake env lean VeriPacket/Audit.lean
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out="$(cd proofs && lake env lean VeriPacket/Audit.lean)"
+    echo "$out"
+    extra="$(grep -o '\[.*\]' <<< "$out" | tr -d '[] ' | tr ',' '\n' \
+      | grep -vxE 'propext|Classical\.choice|Quot\.sound' | sort -u || true)"
+    if [ -n "$extra" ]; then echo "unexpected axioms:"; echo "$extra"; exit 1; fi
+    if grep -rnwE 'sorry|admit' proofs/VeriPacket.lean proofs/VeriPacket/Spec proofs/VeriPacket/Properties; then
+      echo "placeholder found in human-authored Lean"; exit 1
+    fi
 
 # Fail if the committed Lean model is stale relative to the Rust source
 check-generated: translate
