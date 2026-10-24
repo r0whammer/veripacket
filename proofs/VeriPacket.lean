@@ -6,3 +6,4 @@ module
 public import VeriPacket.Code.Funs
 public import VeriPacket.Spec.Packet
 public import VeriPacket.Properties.ValidPacket
+public import VeriPacket.Properties.ParsePacket

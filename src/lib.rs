@@ -59,3 +59,55 @@ pub fn valid_packet(buf: &[u8]) -> bool {
     // No underflow: buf.len() >= 3 > HEADER_LEN.
     buf.len() - HEADER_LEN == declared
 }
+
+/// A well-formed packet borrowed from the buffer it was parsed from.
+///
+/// Only [`parse_packet`] constructs a `Packet`, so every value satisfies the
+/// wire format: `payload().len() + 1` equals the declared length.
+///
+/// `Debug` is deliberately not derived: its `core::fmt` implementation for
+/// slices would add an unverified external model to the Aeneas translation.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Packet<'a> {
+    kind: u8,
+    payload: &'a [u8],
+}
+
+impl<'a> Packet<'a> {
+    /// The `kind` byte (offset 2 in the source buffer).
+    pub fn kind(&self) -> u8 {
+        self.kind
+    }
+
+    /// The payload: every byte after `kind` (offset 3 to the end of the
+    /// source buffer). May be empty.
+    pub fn payload(&self) -> &'a [u8] {
+        self.payload
+    }
+}
+
+/// Parses `buf` as exactly one packet.
+///
+/// Returns `Some` iff [`valid_packet`] accepts `buf`; the result borrows its
+/// payload from `buf` without copying. Returns `None` on malformed input; it
+/// never panics.
+///
+/// ```
+/// use veripacket::parse_packet;
+///
+/// let p = parse_packet(&[0x00, 0x03, 0x07, 1, 2]).unwrap();
+/// assert_eq!(p.kind(), 0x07);
+/// assert_eq!(p.payload(), &[1, 2]);
+/// assert!(parse_packet(&[0x00, 0x02, 0x07]).is_none()); // truncated
+/// ```
+pub fn parse_packet(buf: &[u8]) -> Option<Packet<'_>> {
+    if !valid_packet(buf) {
+        return None;
+    }
+    // In bounds: valid_packet implies buf.len() >= MIN_PACKET_LEN = 3, so
+    // index HEADER_LEN = 2 exists and buf[MIN_PACKET_LEN..] is at most empty.
+    Some(Packet {
+        kind: buf[HEADER_LEN],
+        payload: &buf[MIN_PACKET_LEN..],
+    })
+}

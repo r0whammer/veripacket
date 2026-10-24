@@ -21,6 +21,16 @@ set_option maxRecDepth 2048
 
 namespace VeriPacket
 
+/-- Trait implementation: [core::slice::cmp::{impl core::cmp::PartialEq<[U]> for [T]}]
+    Source: '/rustc/library/core/src/slice/cmp.rs', lines 14:0-16:28
+    Name pattern: [core::cmp::PartialEq<[@T], [@U]>] -/
+@[reducible, rust_trait_impl "core::cmp::PartialEq<[@T], [@U]>"]
+def Slice.Insts.CoreCmpPartialEqSlice {T : Type _} {U : Type _}
+  (cmpPartialEqInst : core.cmp.PartialEq T U) : core.cmp.PartialEq (Slice T)
+  (Slice U) := {
+  eq := core.slice.cmp.PartialEqSlice.eq cmpPartialEqInst
+}
+
 /-- [veripacket::HEADER_LEN]
     Source: 'src/lib.rs', lines 26:0-26:32
     Visibility: public -/
@@ -54,5 +64,92 @@ def valid_packet (buf : Slice Std.U8) : Result Bool := do
     let i3 := Slice.len buf
     let i4 ← i3 - HEADER_LEN
     ok (i4 = declared)
+
+/-- [veripacket::{impl core::clone::Clone for veripacket::Packet<'a>}::clone]:
+    Source: 'src/lib.rs', lines 70:9-70:14
+    Visibility: public -/
+def Packet.Insts.CoreCloneClone.clone (self : Packet) : Result Packet := do
+  ok self
+
+/-- Trait implementation: [veripacket::{impl core::clone::Clone for veripacket::Packet<'a>}]
+    Source: 'src/lib.rs', lines 70:9-70:14 -/
+@[reducible]
+def Packet.Insts.CoreCloneClone : core.clone.Clone Packet := {
+  clone := Packet.Insts.CoreCloneClone.clone
+}
+
+/-- Trait implementation: [veripacket::{impl core::marker::Copy for veripacket::Packet<'a>}]
+    Source: 'src/lib.rs', lines 70:16-70:20 -/
+@[reducible]
+def Packet.Insts.CoreMarkerCopy : core.marker.Copy Packet := {
+  cloneInst := Packet.Insts.CoreCloneClone
+}
+
+/-- Trait implementation: [veripacket::{impl core::marker::StructuralPartialEq for veripacket::Packet<'a>}]
+    Source: 'src/lib.rs', lines 70:22-70:31 -/
+@[reducible]
+def Packet.Insts.CoreMarkerStructuralPartialEq :
+  core.marker.StructuralPartialEq Packet := {
+}
+
+/-- [veripacket::{impl core::cmp::PartialEq<veripacket::Packet<'a>> for veripacket::Packet<'a>}::eq]:
+    Source: 'src/lib.rs', lines 70:22-70:31
+    Visibility: public -/
+def Packet.Insts.CoreCmpPartialEqPacket.eq
+  (self : Packet) (other : Packet) : Result Bool := do
+  if self.kind = other.kind
+  then
+    core.slice.cmp.PartialEqSlice.eq core.cmp.PartialEqU8 self.payload
+      other.payload
+  else ok false
+
+/-- Trait implementation: [veripacket::{impl core::cmp::PartialEq<veripacket::Packet<'a>> for veripacket::Packet<'a>}]
+    Source: 'src/lib.rs', lines 70:22-70:31 -/
+@[reducible]
+def Packet.Insts.CoreCmpPartialEqPacket : core.cmp.PartialEq Packet Packet := {
+  eq := Packet.Insts.CoreCmpPartialEqPacket.eq
+}
+
+/-- [veripacket::{impl core::cmp::Eq for veripacket::Packet<'a>}::assert_fields_are_eq]:
+    Source: 'src/lib.rs', lines 70:33-70:35
+    Visibility: public -/
+def Packet.Insts.CoreCmpEq.assert_fields_are_eq
+  (self : Packet) : Result Unit := do
+  ok ()
+
+/-- Trait implementation: [veripacket::{impl core::cmp::Eq for veripacket::Packet<'a>}]
+    Source: 'src/lib.rs', lines 70:33-70:35 -/
+@[reducible]
+def Packet.Insts.CoreCmpEq : core.cmp.Eq Packet := {
+  partialEqInst := Packet.Insts.CoreCmpPartialEqPacket
+  assert_fields_are_eq := Packet.Insts.CoreCmpEq.assert_fields_are_eq
+}
+
+/-- [veripacket::{veripacket::Packet<'a>}::kind]:
+    Source: 'src/lib.rs', lines 78:4-80:5
+    Visibility: public -/
+def Packet.impl.kind (self : Packet) : Result Std.U8 := do
+  ok self.kind
+
+/-- [veripacket::{veripacket::Packet<'a>}::payload]:
+    Source: 'src/lib.rs', lines 84:4-86:5
+    Visibility: public -/
+def Packet.impl.payload (self : Packet) : Result (Slice Std.U8) := do
+  ok self.payload
+
+/-- [veripacket::parse_packet]:
+    Source: 'src/lib.rs', lines 103:0-113:1
+    Visibility: public -/
+def parse_packet (buf : Slice Std.U8) : Result (Option Packet) := do
+  let b ← valid_packet buf
+  if b
+  then
+    let i ← Slice.index_usize buf HEADER_LEN
+    let s ←
+      core.slice.index.Slice.index
+        (core.slice.index.SliceIndexRangeFromUsizeSlice Std.U8) buf
+        { start := MIN_PACKET_LEN }
+    ok (some { kind := i, payload := s })
+  else ok none
 
 end VeriPacket

@@ -27,4 +27,11 @@ def IsValidPacket : List U8 → Prop
   | hi :: lo :: body => 1 ≤ body.length ∧ body.length = decodeLength hi.val lo.val
   | _ => False
 
+/-- `kind` and `payload` are the fields of `bytes` read as one packet:
+`bytes` is a header `hi lo`, then `kind`, then exactly `payload` up to the
+end, and the declared length counts `kind` plus `payload`. -/
+def IsParseOf (bytes : List U8) (kind : U8) (payload : List U8) : Prop :=
+  ∃ hi lo, bytes = hi :: lo :: kind :: payload ∧
+    payload.length + 1 = decodeLength hi.val lo.val
+
 end VeriPacket.Spec

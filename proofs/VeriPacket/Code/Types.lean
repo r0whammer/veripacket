@@ -20,4 +20,11 @@ set_option maxRecDepth 2048
 
 namespace VeriPacket
 
+/-- [veripacket::Packet]
+    Source: 'src/lib.rs', lines 71:0-74:1
+    Visibility: public -/
+structure Packet where
+  kind : Std.U8
+  payload : Slice Std.U8
+
 end VeriPacket

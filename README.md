@@ -29,6 +29,12 @@ Format decisions (implemented in `src/lib.rs`):
 | `MIN_PACKET_LEN = 3` | smallest valid packet in bytes |
 | `declared_length(hi, lo) -> usize` | decodes the BE header |
 | `valid_packet(buf: &[u8]) -> bool` | accepts exactly one well-formed packet |
+| `parse_packet(buf: &[u8]) -> Option<Packet<'_>>` | `Some` iff `valid_packet(buf)`; borrows the payload |
+| `Packet::kind()` / `Packet::payload()` | byte at offset 2 / bytes from offset 3 to the end |
+
+`Packet` derives `Clone`, `Copy`, `PartialEq`, `Eq` but not `Debug`: the
+`core::fmt` slice impl would add an unverified external model to the
+Aeneas translation.
 
 ## Status
 
@@ -38,6 +44,7 @@ Format decisions (implemented in `src/lib.rs`):
 | M1 Minimal validator | implemented and tested (pinned nightly-2026-09-17) |
 | M2 Translation | model generated: `proofs/VeriPacket/Code` builds with Lake; no external models needed |
 | M3 First proofs | proof checked: `proofs/VeriPacket/Properties/ValidPacket.lean` (`just audit` lists axioms) |
+| M4 Parsed structure | proof checked: `proofs/VeriPacket/Properties/ParsePacket.lean` |
 
 ## Development
 

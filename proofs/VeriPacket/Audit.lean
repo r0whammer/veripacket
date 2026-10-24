@@ -9,3 +9,10 @@ import VeriPacket
 #print axioms VeriPacket.accepted_implies_min_length
 #print axioms VeriPacket.accepted_length_matches_header
 #print axioms VeriPacket.short_packets_rejected
+#print axioms VeriPacket.parse_packet_spec
+#print axioms VeriPacket.parse_packet_returns_normally
+#print axioms VeriPacket.parse_packet_some_iff_valid
+#print axioms VeriPacket.parsed_kind_is_source_byte
+#print axioms VeriPacket.parsed_payload_is_suffix
+#print axioms VeriPacket.parsed_payload_length_matches_header
+#print axioms VeriPacket.IsParseOf.unique
