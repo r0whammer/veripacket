@@ -1,0 +1,8 @@
+[package]
+name = "veripacket"
+version = "0.1.0"
+edition = "2021"
+description = "Educational, formally verified binary packet validator (Rust -> Charon -> Aeneas -> Lean 4)"
+publish = false
+
+[dependencies]
