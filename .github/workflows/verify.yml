@@ -17,6 +17,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Export of the few dev-shell paths no public cache has (the pinned Aeneas
+  # build), saved with actions/cache and keyed on flake.lock.
+  NIX_LOCAL_CACHE: /home/runner/.cache/nix-local
+
 jobs:
   verify:
     runs-on: ubuntu-24.04
@@ -36,14 +41,50 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          # Charon (and sometimes Aeneas) builds published by upstream CI.
+          # hacl.cachix.org: Charon and its Rust toolchain, published by
+          # upstream CI.
           extra_nix_config: |
             extra-substituters = https://hacl.cachix.org
             extra-trusted-public-keys = hacl.cachix.org-1:FzsZ2xsByOwKwIWNPII7yMOelJNDZ12mDAj3d1eGX0c=
 
+      - name: Restore locally built Nix paths
+        id: nix-local
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.NIX_LOCAL_CACHE }}
+          key: nix-local-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+
+      # Fetch the paths' dependencies from public caches, then import the
+      # unsigned export (allowed because install-nix-action makes this user a
+      # trusted Nix user). On any failure the next step just rebuilds them.
+      - name: Import locally built Nix paths
+        if: steps.nix-local.outputs.cache-hit == 'true'
+        run: |
+          nix-store --realise $(cat "$NIX_LOCAL_CACHE/refs.txt") > /dev/null \
+            && nix-store --import < "$NIX_LOCAL_CACHE/built.nar" \
+            || echo "::warning::cached Nix paths not imported; rebuilding"
+
       # Fails if flake.lock does not match flake.nix instead of re-locking.
+      # The profile pins the dev shell's closure so it can be cached below.
       - name: Build dev shell
-        run: nix develop --no-update-lock-file --command true
+        run: |
+          nix develop --no-update-lock-file --profile "$RUNNER_TEMP/dev-profile" \
+            --command true
+
+      # Paths built on this runner carry no upstream signature. Export just
+      # those, in dependency order (nix-store -qR is topologically sorted),
+      # plus the list of their dependencies, which public caches serve.
+      - name: Export locally built Nix paths
+        if: steps.nix-local.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$NIX_LOCAL_CACHE" && cd "$NIX_LOCAL_CACHE"
+          nix path-info -r --sigs "$RUNNER_TEMP/dev-profile" \
+            | awk '!/cache\.nixos\.org-1:|hacl\.cachix\.org-1:/ { print $1 }' > unsigned.txt
+          nix-store -qR "$RUNNER_TEMP/dev-profile" | grep -xFf unsigned.txt > built.txt
+          nix-store -q --references $(cat built.txt) | sort -u | grep -vxFf built.txt > refs.txt
+          nix-store --export $(cat built.txt) > built.nar
+          cat built.txt
+          du -sh built.nar
 
       - name: Rust checks (fmt, clippy, tests)
         run: nix develop --command just check
@@ -53,6 +94,15 @@ jobs:
 
       - name: Fetch Mathlib build cache
         run: nix develop --command bash -c 'cd proofs && lake exe cache get'
+
+      # Mathlib's build comes from `lake exe cache get`; the Aeneas Lean
+      # library has no such cache, so keep its build output between runs.
+      # Restored after the fetch above, which clones the package sources.
+      - name: Restore Aeneas Lean library build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: proofs/.lake/packages/aeneas/backends/lean/.lake/build
+          key: aeneas-lean-${{ runner.os }}-${{ hashFiles('proofs/lean-toolchain', 'proofs/lake-manifest.json') }}
 
       - name: Check proofs
         run: nix develop --command just proofs
