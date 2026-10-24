@@ -37,7 +37,7 @@ Format decisions (implemented in `src/lib.rs`):
 | M0 Foundation | done: Cargo project, `flake.lock`, `proofs/` pinned to Aeneas rev in `flake.lock` (Lean v4.35.0) |
 | M1 Minimal validator | implemented and tested (pinned nightly-2026-09-17) |
 | M2 Translation | model generated: `proofs/VeriPacket/Code` builds with Lake; no external models needed |
-| M3 First proofs | proof pending |
+| M3 First proofs | proof checked: `proofs/VeriPacket/Properties/ValidPacket.lean` (`just audit` lists axioms) |
 
 ## Development
 

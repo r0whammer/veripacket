@@ -55,6 +55,10 @@ translate: extract
 proofs: _proofs-ready
     cd proofs && lake build
 
+# Print the axioms each headline theorem depends on
+audit: proofs
+    cd proofs && lake env lean VeriPacket/Audit.lean
+
 # Fail if the committed Lean model is stale relative to the Rust source
 check-generated: translate
     git diff --exit-code -- {{ generated }}
