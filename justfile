@@ -45,9 +45,10 @@ extract: _nix
 translate: extract
     aeneas -backend lean {{ llbc }} -dest proofs -subdir /VeriPacket/Code \
       -split-files -namespace VeriPacket
-    @if compgen -G "{{ generated }}/*_Template.lean" > /dev/null; then \
+    @templates="$(find {{ generated }} -name '*_Template.lean')"; \
+    if [ -n "$templates" ]; then \
       echo "note: external-model templates generated; review before use:"; \
-      ls {{ generated }}/*_Template.lean; \
+      echo "$templates"; \
     fi
 
 # Build the Lean project and check all proofs
