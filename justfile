@@ -78,6 +78,10 @@ check-generated: translate
 # End to end: Rust checks, regenerate the model, check proofs
 verify: check translate proofs
 
+# Line coverage of src/ by the Rust tests (writes target/coverage/summary.json)
+coverage:
+    scripts/coverage.sh
+
 # Run every pre-commit hook against the whole tree
 hooks:
     pre-commit run --all-files

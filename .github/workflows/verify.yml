@@ -1,7 +1,8 @@
 # End-to-end check: Rust checks, regenerate the Lean model from the Rust
 # source and fail if the committed model is stale, check all proofs, and
 # audit axioms. Same `just` recipes as local development, in the pinned
-# Nix dev shell.
+# Nix dev shell. On main, also publishes badge data (coverage, theorem
+# count) to the `badges` branch for the README's shields.io badges.
 name: verify
 
 on:
@@ -12,6 +13,11 @@ on:
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    # GitHub's explicit bash adds -o pipefail (needed for `| tee` below).
+    shell: bash
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -108,4 +114,54 @@ jobs:
         run: nix develop --command just proofs
 
       - name: Audit axioms and placeholders
-        run: nix develop --command just audit
+        run: nix develop --command just audit | tee "$RUNNER_TEMP/audit.txt"
+
+      - name: Coverage
+        run: nix develop --command just coverage
+
+      # shields.io endpoint JSON (https://shields.io/badges/endpoint-badge).
+      - name: Badge data
+        run: |
+          mkdir -p "$RUNNER_TEMP/badges"
+          jq '.data[0].totals.lines.percent | (. * 10 | round / 10) as $p | {
+                schemaVersion: 1, label: "coverage", message: "\($p)%",
+                color: (if $p >= 90 then "brightgreen" elif $p >= 75 then "yellowgreen"
+                        elif $p >= 60 then "yellow" else "red" end) }' \
+            target/coverage/summary.json > "$RUNNER_TEMP/badges/coverage.json"
+          n=$(grep -cE 'depends on axioms|does not depend on any axioms' "$RUNNER_TEMP/audit.txt")
+          jq -n --arg n "$n" '{ schemaVersion: 1, label: "Lean proofs",
+                message: "\($n) theorems checked", color: "blue" }' \
+            > "$RUNNER_TEMP/badges/proofs.json"
+          cat "$RUNNER_TEMP"/badges/*.json
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: badges
+          path: ${{ runner.temp }}/badges
+
+  # Separate job so only this one, with no build or test code, can write to
+  # the repository. Force-pushes a single-commit `badges` branch.
+  publish-badges:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: badges
+          path: badges
+
+      - name: Push badge data to the badges branch
+        working-directory: badges
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Badge data for $GITHUB_SHA"
+          git push -q --force \
+            "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" badges

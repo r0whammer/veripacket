@@ -30,6 +30,7 @@
               pkgs.git
               pkgs.just
               pkgs.pre-commit
+              pkgs.jq
               pkgs.gnumake
               pkgs.pkg-config
             ];

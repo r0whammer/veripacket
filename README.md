@@ -1,5 +1,11 @@
 # VeriPacket
 
+[![verify](https://github.com/r0whammer/veripacket/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/r0whammer/veripacket/actions/workflows/verify.yml)
+[![Lean proofs](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/r0whammer/veripacket/badges/proofs.json)](proofs/VeriPacket/Properties)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/r0whammer/veripacket/badges/coverage.json)](scripts/coverage.sh)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success)](src/lib.rs)
+[![license: MIT](https://img.shields.io/github/license/r0whammer/veripacket)](LICENSE)
+
 An educational binary packet validator in safe Rust, with functional
 properties to be verified in Lean 4 via Charon → Aeneas. See `CLAUDE.md` for
 the full plan, milestones, and proof policy.
@@ -77,3 +83,10 @@ shell; run all hooks manually with `just hooks`.
 CI (`.github/workflows/verify.yml`) runs the same checks on every push to
 `main` and every pull request, plus `just audit`, which fails on any axiom
 beyond `propext`, `Classical.choice`, `Quot.sound` or any `sorry`/`admit`.
+On `main` it also publishes the coverage (`just coverage`: line coverage of
+`src/` by the Rust tests) and checked-theorem count shown in the badges to
+the `badges` branch.
+
+## License
+
+MIT; see [`LICENSE`](LICENSE).
